@@ -1,0 +1,26 @@
+[
+  {
+    "text": "Plan for a large initial payload when using the streaming SDK.",
+    "difficulty": "easy"
+  },
+  {
+    "text": "Feature flags can target specific users or segments using rules.",
+    "difficulty": "easy"
+  },
+  {
+    "text": "LaunchDarkly's Relay Proxy can help with performance and caching in enterprise environments.",
+    "difficulty": "medium"
+  },
+  {
+    "text": "Avoid flag bloat: remove deprecated flags to keep your codebase clean.",
+    "difficulty": "medium"
+  },
+  {
+    "text": "Use flag triggers for real-time behavior changes without redeploying.",
+    "difficulty": "hard"
+  },
+  {
+    "text": "Set `trackEvents` to `true` on flags if you want to send event data for experimentation.",
+    "difficulty": "hard"
+  }
+]
