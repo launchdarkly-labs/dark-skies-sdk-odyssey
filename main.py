@@ -9,19 +9,25 @@ ASTEROID_IMG_PATH = "assets/Asteroids/Asteroid Large.png"
 BUG_IMG_PATH = "assets/BUG.png"
 ERROR_IMG_PATH = "assets/Error.png"
 
-BKG_IMG_PATH = "assets/Tile Galaxy BK - 3480x999.png"
+BKG_IMG_PATH = "assets/Tile Galaxy BK - 1080x1920.png"
 if os.path.exists(BKG_IMG_PATH):
     _bkg_img = pygame.image.load(BKG_IMG_PATH)
-    SCREEN_WIDTH = _bkg_img.get_width() // 2  # Half the original width
-    SCREEN_HEIGHT = _bkg_img.get_height()
+    # Use a reasonable game window size based on the background
+    bg_width, bg_height = _bkg_img.get_size()
+    if bg_width > bg_height:  # Landscape background
+        SCREEN_WIDTH = min(1200, bg_width)  # Cap at reasonable size
+        SCREEN_HEIGHT = int(SCREEN_WIDTH * (bg_height / bg_width))
+    else:  # Portrait background
+        SCREEN_HEIGHT = min(800, bg_height)  # Cap at reasonable size  
+        SCREEN_WIDTH = int(SCREEN_HEIGHT * (bg_width / bg_height))
     del _bkg_img
 else:
-    SCREEN_WIDTH = 200  # Half of 400
+    SCREEN_WIDTH = 800
     SCREEN_HEIGHT = 600
 
 # Game Constants
-BIRD_WIDTH = 136
-BIRD_HEIGHT = 96
+BIRD_WIDTH = 400
+BIRD_HEIGHT = 229
 PIPE_WIDTH = 52
 PIPE_HEIGHT = 320
 PIPE_GAP = 250
@@ -39,9 +45,9 @@ FONT_PATH = "assets/Fonts/Everything else/PixelDigivolve-mOm9.ttf"
 FONT_ITALIC_PATH = "assets/Fonts/Everything else/PixelDigivolveItalic-dV8R.ttf"
 
 # Sound file paths (add your sound files to assets/sounds/)
-JUMP_SOUND_PATH = "assets/sounds/jump.wav"
-HIT_SOUND_PATH = "assets/sounds/hit.wav"
-SCORE_SOUND_PATH = "assets/sounds/score.wav"
+JUMP_SOUND_PATH = None  # "assets/sounds/jump.wav"
+HIT_SOUND_PATH = None   # "assets/sounds/hit.wav"
+SCORE_SOUND_PATH = None # "assets/sounds/score.wav"
 GAME_OVER_SOUND_PATH = "assets/sounds/game_over.wav"
 BACKGROUND_MUSIC_PATH = "assets/sounds/background.wav"
 
@@ -89,42 +95,97 @@ class Pipe:
         self.height = random.randint(50, SCREEN_HEIGHT - PIPE_GAP - 50)
         self.top_rect = pygame.Rect(self.x, 0, PIPE_WIDTH, self.height)
         self.bottom_rect = pygame.Rect(self.x, self.height + PIPE_GAP, PIPE_WIDTH, SCREEN_HEIGHT - self.height - PIPE_GAP)
-        # Randomly select images for top and bottom obstacles
-        asteroid_img = pygame.image.load(ASTEROID_IMG_PATH).convert_alpha()
-        asteroid_img = pygame.transform.smoothscale(asteroid_img, (asteroid_img.get_width() // 2, asteroid_img.get_height() // 2))
-        bug_img = pygame.image.load(BUG_IMG_PATH).convert_alpha()
-        error_img = pygame.image.load(ERROR_IMG_PATH).convert_alpha()
-        self.obstacle_images = [asteroid_img, bug_img, error_img]
-        self.top_img = random.choice(self.obstacle_images)
-        self.bottom_img = random.choice(self.obstacle_images)
-        # Get new image sizes
-        self.top_img_size = self.top_img.get_size()
-        self.bottom_img_size = self.bottom_img.get_size()
+        # Use asteroids as main obstacles
+        asteroid_large_img = pygame.image.load("assets/Asteroids/Asteroid Large.png").convert_alpha()
+        asteroid_small_img = pygame.image.load("assets/Asteroids/Asteroid Small.png").convert_alpha()
+        # Scale asteroids to appropriate sizes
+        self.asteroid_large = pygame.transform.smoothscale(asteroid_large_img, (80, 80))
+        self.asteroid_small = pygame.transform.smoothscale(asteroid_small_img, (50, 50))
+        # Load error symbol for single placement (not tiled)
+        self.error_img = pygame.image.load(ERROR_IMG_PATH).convert_alpha()
+        self.error_img = pygame.transform.smoothscale(self.error_img, (40, 40))
+        # Choose asteroids for obstacles
+        self.top_asteroids = self._generate_asteroid_pattern(self.top_rect)
+        self.bottom_asteroids = self._generate_asteroid_pattern(self.bottom_rect)
+        # Add single error symbol in varying position
+        self.error_positions = self._generate_error_positions()
+
+    def _generate_asteroid_pattern(self, rect):
+        """Generate asteroid positions to fill the obstacle area"""
+        asteroids = []
+        y = rect.y
+        while y < rect.y + rect.height:
+            # Randomly choose asteroid size
+            if random.random() < 0.6:  # 60% chance for large asteroid
+                asteroid_img = self.asteroid_large
+                size = 80
+            else:
+                asteroid_img = self.asteroid_small  
+                size = 50
+            
+            # Add some random horizontal offset for variety
+            x_offset = random.randint(-10, 10)
+            asteroids.append({
+                'img': asteroid_img,
+                'x': rect.x + x_offset,
+                'y': y,
+                'size': size
+            })
+            y += size - 10  # Slight overlap for better coverage
+        return asteroids
+
+    def _generate_error_positions(self):
+        """Generate single error symbol positions in varying locations"""
+        error_positions = []
+        # Add one error symbol to top or bottom area (randomly)
+        # Make sure we have valid ranges for positioning
+        error_size = 40  # Size of error image
+        max_x = max(10, PIPE_WIDTH - error_size)
+        min_x = 5
+        
+        if random.random() < 0.5 and self.top_rect.height > error_size:
+            # Place in top area
+            x = self.x + random.randint(min_x, max_x)
+            max_y = max(self.top_rect.y + 10, self.top_rect.y + self.top_rect.height - error_size)
+            min_y = self.top_rect.y + 10
+            if max_y > min_y:
+                y = random.randint(min_y, max_y)
+                error_positions.append({'x': x, 'y': y})
+        elif self.bottom_rect.height > error_size:
+            # Place in bottom area
+            x = self.x + random.randint(min_x, max_x)
+            max_y = max(self.bottom_rect.y + 10, self.bottom_rect.y + self.bottom_rect.height - error_size)
+            min_y = self.bottom_rect.y + 10
+            if max_y > min_y:
+                y = random.randint(min_y, max_y)
+                error_positions.append({'x': x, 'y': y})
+        return error_positions
 
     def move(self):
         self.x -= 3
         self.top_rect.x = self.x
         self.bottom_rect.x = self.x
+        # Update asteroid positions
+        for asteroid in self.top_asteroids:
+            asteroid['x'] = self.x + (asteroid['x'] - (self.x + 3))
+        for asteroid in self.bottom_asteroids:
+            asteroid['x'] = self.x + (asteroid['x'] - (self.x + 3))
+        # Update error positions
+        for error_pos in self.error_positions:
+            error_pos['x'] -= 3
 
     def draw(self, screen):
-        # Tile the top image to fill the top_rect height
-        y = self.top_rect.y
-        while y < self.top_rect.y + self.top_rect.height:
-            h = min(self.top_img_size[1], self.top_rect.y + self.top_rect.height - y)
-            img = self.top_img
-            if h < self.top_img_size[1]:
-                img = self.top_img.subsurface((0, 0, self.top_img_size[0], h))
-            screen.blit(img, (self.top_rect.x, y))
-            y += self.top_img_size[1]
-        # Tile the bottom image to fill the bottom_rect height
-        y = self.bottom_rect.y
-        while y < self.bottom_rect.y + self.bottom_rect.height:
-            h = min(self.bottom_img_size[1], self.bottom_rect.y + self.bottom_rect.height - y)
-            img = self.bottom_img
-            if h < self.bottom_img_size[1]:
-                img = self.bottom_img.subsurface((0, 0, self.bottom_img_size[0], h))
-            screen.blit(img, (self.bottom_rect.x, y))
-            y += self.bottom_img_size[1]
+        # Draw asteroids in top area
+        for asteroid in self.top_asteroids:
+            screen.blit(asteroid['img'], (asteroid['x'], asteroid['y']))
+        
+        # Draw asteroids in bottom area  
+        for asteroid in self.bottom_asteroids:
+            screen.blit(asteroid['img'], (asteroid['x'], asteroid['y']))
+            
+        # Draw single error symbols in varying positions
+        for error_pos in self.error_positions:
+            screen.blit(self.error_img, (error_pos['x'], error_pos['y']))
 
     def off_screen(self):
         return self.x < -PIPE_WIDTH
@@ -147,11 +208,14 @@ def load_sounds():
     
     for sound_name, sound_path in sound_files.items():
         try:
-            if os.path.exists(sound_path):
+            if sound_path and os.path.exists(sound_path):
                 sounds[sound_name] = pygame.mixer.Sound(sound_path)
                 print(f"Loaded sound: {sound_name}")
             else:
-                print(f"Sound file not found: {sound_path}")
+                if sound_path:
+                    print(f"Sound file not found: {sound_path}")
+                else:
+                    print(f"Sound disabled: {sound_name}")
                 sounds[sound_name] = None
         except pygame.error as e:
             print(f"Error loading sound {sound_name}: {e}")
@@ -295,18 +359,30 @@ def show_splash_screen(screen, clock):
         # Draw splash screen
         screen.blit(splash_img, (0, 0))
         
-        # Add "Press any key to continue" text
+        # Add "Click anywhere to start" text (updated per designer feedback)
         font = pygame.font.Font(FONT_PATH, 36)
-        text = render_text_with_outline(font, 'Press any key to start!', WHITE, BLACK)
+        text = render_text_with_outline(font, 'Click anywhere to start!', WHITE, BLACK)
         text_rect = text.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT - 50))
         screen.blit(text, text_rect)
         
         pygame.display.update()
 
 def draw_window(screen, bird, pipes, score, hit_count=0):
-    # Draw galaxy background scaled to fit the window
-    scaled_bg = pygame.transform.scale(background_img, (SCREEN_WIDTH, SCREEN_HEIGHT))
-    screen.blit(scaled_bg, (0, 0))
+    # Draw galaxy background maintaining aspect ratio to prevent distortion
+    bg_width, bg_height = background_img.get_size()
+    scale_x = SCREEN_WIDTH / bg_width
+    scale_y = SCREEN_HEIGHT / bg_height
+    scale = min(scale_x, scale_y)  # Use smaller scale to maintain aspect ratio
+    
+    new_width = int(bg_width * scale)
+    new_height = int(bg_height * scale)
+    scaled_bg = pygame.transform.smoothscale(background_img, (new_width, new_height))
+    
+    # Center the background if it doesn't fill the entire screen
+    x_offset = (SCREEN_WIDTH - new_width) // 2
+    y_offset = (SCREEN_HEIGHT - new_height) // 2
+    screen.fill(BLACK)  # Fill with black in case background doesn't cover entire screen
+    screen.blit(scaled_bg, (x_offset, y_offset))
     # Pass game_over state to bird.draw
     crashed = globals().get('game_over', False)
     bird.draw(screen, crashed=crashed)
@@ -411,12 +487,32 @@ def main():
                 play_sound(sounds, 'game_over')
         draw_window(screen, bird, pipes, score, hit_count)
         if game_over:
-            font = pygame.font.Font(FONT_PATH, 48)
-            if hit_count >= 10:
-                over_text = render_text_with_outline(font, '10 Hits Reached! Press R to Restart', WHITE, BLACK)
-            else:
-                over_text = render_text_with_outline(font, 'Game Over! Press R to Restart', WHITE, BLACK)
-            screen.blit(over_text, (20, SCREEN_HEIGHT // 2 - 24))
+            # Draw game over overlay using the provided game over screen
+            try:
+                game_over_img = pygame.image.load("assets/Game Over Text.png").convert_alpha()
+                # Scale the game over overlay to fit the screen appropriately
+                overlay_width = SCREEN_WIDTH - 100  # Leave some margin
+                overlay_height = game_over_img.get_height() * (overlay_width / game_over_img.get_width())
+                scaled_overlay = pygame.transform.smoothscale(game_over_img, (int(overlay_width), int(overlay_height)))
+                
+                # Center the overlay on screen
+                overlay_x = (SCREEN_WIDTH - overlay_width) // 2
+                overlay_y = (SCREEN_HEIGHT - overlay_height) // 2
+                screen.blit(scaled_overlay, (overlay_x, overlay_y))
+                
+                # Add restart instruction below the overlay
+                font = pygame.font.Font(FONT_PATH, 36)
+                restart_text = render_text_with_outline(font, 'Press R to Restart', WHITE, BLACK)
+                restart_rect = restart_text.get_rect(center=(SCREEN_WIDTH // 2, overlay_y + overlay_height + 50))
+                screen.blit(restart_text, restart_rect)
+            except:
+                # Fallback to text-based game over if image fails to load
+                font = pygame.font.Font(FONT_PATH, 48)
+                if hit_count >= 10:
+                    over_text = render_text_with_outline(font, '10 Hits Reached! Press R to Restart', WHITE, BLACK)
+                else:
+                    over_text = render_text_with_outline(font, 'Game Over! Press R to Restart', WHITE, BLACK)
+                screen.blit(over_text, (20, SCREEN_HEIGHT // 2 - 24))
             pygame.display.update()
     pygame.quit()
     sys.exit()
