@@ -367,6 +367,73 @@ def show_splash_screen(screen, clock):
         
         pygame.display.update()
 
+def show_instructions_screen(screen, clock):
+    """Display the instructions screen and wait for user input to continue"""
+    waiting = True
+    while waiting:
+        clock.tick(FPS)
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                sys.exit()
+            if event.type == pygame.KEYDOWN or event.type == pygame.MOUSEBUTTONDOWN:
+                waiting = False
+        
+        # Fill screen with dark background
+        screen.fill((20, 20, 40))  # Dark blue background
+        
+        # Title
+        title_font = pygame.font.Font(FONT_PATH, 48)
+        title_text = render_text_with_outline(title_font, 'HOW TO PLAY', WHITE, BLACK)
+        title_rect = title_text.get_rect(center=(SCREEN_WIDTH // 2, 100))
+        screen.blit(title_text, title_rect)
+        
+        # Instructions text
+        instructions = [
+            "Gameplay:",
+            "",
+            "• Press SPACE to jump",
+            "",
+            "• Dodge obstacles representing SDK misconfigurations",
+            "",
+            "• Trivia modals will pause the game periodically",
+            "  with tips and questions",
+            "",
+            "• Survive as long as possible!",
+            "",
+            "",
+            "Click anywhere to start playing..."
+        ]
+        
+        # Draw instructions
+        font = pygame.font.Font(FONT_PATH, 32)
+        small_font = pygame.font.Font(FONT_PATH, 28)
+        
+        y_start = 180
+        line_height = 40
+        
+        for i, line in enumerate(instructions):
+            if line.startswith("•"):
+                # Bullet points - use smaller font and indent
+                text = render_text_with_outline(small_font, line, WHITE, BLACK)
+                x_pos = SCREEN_WIDTH // 2 - 200
+            elif line == "Gameplay:" or line == "Click anywhere to start playing...":
+                # Main headers
+                text = render_text_with_outline(font, line, WHITE, BLACK)
+                x_pos = SCREEN_WIDTH // 2 - text.get_width() // 2
+            elif line.startswith("  "):
+                # Sub-bullet points - smaller font, more indent
+                text = render_text_with_outline(small_font, line, (200, 200, 200), BLACK)
+                x_pos = SCREEN_WIDTH // 2 - 180
+            else:
+                # Regular text
+                text = render_text_with_outline(font, line, WHITE, BLACK)
+                x_pos = SCREEN_WIDTH // 2 - text.get_width() // 2
+            
+            screen.blit(text, (x_pos, y_start + i * line_height))
+        
+        pygame.display.update()
+
 def draw_window(screen, bird, pipes, score, hit_count=0):
     # Draw galaxy background maintaining aspect ratio to prevent distortion
     bg_width, bg_height = background_img.get_size()
@@ -412,6 +479,9 @@ def main():
     
     # Show splash screen first
     show_splash_screen(screen, clock)
+    
+    # Show instructions screen
+    show_instructions_screen(screen, clock)
     
     # Load background image and trivia data
     global background_img
