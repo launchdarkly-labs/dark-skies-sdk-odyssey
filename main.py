@@ -45,9 +45,9 @@ FONT_PATH = "assets/Fonts/Everything else/PixelDigivolve-mOm9.ttf"
 FONT_ITALIC_PATH = "assets/Fonts/Everything else/PixelDigivolveItalic-dV8R.ttf"
 
 # Sound file paths (add your sound files to assets/sounds/)
-JUMP_SOUND_PATH = None  # "assets/sounds/jump.wav"
-HIT_SOUND_PATH = None   # "assets/sounds/hit.wav"
-SCORE_SOUND_PATH = None # "assets/sounds/score.wav"
+JUMP_SOUND_PATH = "assets/sounds/jump.wav"
+HIT_SOUND_PATH = "assets/sounds/hit.wav"
+SCORE_SOUND_PATH = "assets/sounds/score.wav"
 GAME_OVER_SOUND_PATH = "assets/sounds/game_over.wav"
 BACKGROUND_MUSIC_PATH = "assets/sounds/background.wav"
 
