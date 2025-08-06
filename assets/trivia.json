@@ -4,7 +4,15 @@
     "difficulty": "easy"
   },
   {
+    "text": "No configuration needed. LaunchDarkly SDKs handle retry for you",
+    "difficulty": "easy"  
+  },
+  {
     "text": "Feature flags can target specific users or segments using rules.",
+    "difficulty": "easy"
+  },
+  {
+    "text": "You only need one instance of the Server SDK to evaluate feature flags for any contexts",
     "difficulty": "easy"
   },
   {
@@ -12,8 +20,21 @@
     "difficulty": "medium"
   },
   {
+    "text": "Once initialized, server-side SDKs evaluate flags locally, no network request needed.",
+    "difficulty": "medium",
+    "category": ""
+  },
+  {
     "text": "Avoid flag bloat: remove deprecated flags to keep your codebase clean.",
     "difficulty": "medium"
+  },
+  {
+    "text": "Config persistent store for Server-side SDKs. You can start new instances even during LaunchDarkly outage.",
+    "difficulty": "medium"
+  },
+  {
+    "text": "Client-side SDKs caches the evaluated flag variations so evaluation call is just local value read.",
+    "difficulty": "hard"
   },
   {
     "text": "Use flag triggers for real-time behavior changes without redeploying.",
