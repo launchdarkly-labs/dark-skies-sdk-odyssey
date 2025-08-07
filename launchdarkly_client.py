@@ -45,9 +45,6 @@ class LaunchDarklyClient:
         Flag: mute-sound (boolean)
         Default: False (sound enabled)
         """
-        if not self.is_initialized or not self.client:
-            return False  # Default: sound enabled
-        
         if user_context is None:
             user_context = self.get_user_context()
         
@@ -69,10 +66,6 @@ class LaunchDarklyClient:
             user_context = self.get_user_context()
         
         enabled_difficulties = []
-        
-        # default all difficulties to enabled if LD isn't available
-        if not self.is_initialized or not self.client:
-            return ["easy", "medium", "hard"]
         
         try:
             # check each difficulty for flag
