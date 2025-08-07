@@ -5,6 +5,7 @@ import random
 import os
 import json
 from modals import Modal
+from launchdarkly_client import LaunchDarklyClient
 ASTEROID_IMG_PATH = "assets/Asteroids/Asteroid Large.png"
 BUG_IMG_PATH = "assets/BUG.png"
 ERROR_IMG_PATH = "assets/Error.png"
@@ -28,6 +29,9 @@ else:
 # Game Constants
 BIRD_WIDTH = 400
 BIRD_HEIGHT = 229
+
+# global mute state controlled by LD
+is_muted = False
 PIPE_WIDTH = 52
 PIPE_HEIGHT = 320
 PIPE_GAP = 250
@@ -228,7 +232,10 @@ def load_background_music():
     try:
         if os.path.exists(BACKGROUND_MUSIC_PATH):
             pygame.mixer.music.load(BACKGROUND_MUSIC_PATH)
-            pygame.mixer.music.set_volume(0.5)  # Set volume to 50%
+            if is_muted:
+                pygame.mixer.music.set_volume(0.0)  # muted
+            else:
+                pygame.mixer.music.set_volume(0.5)  # Set volume to 50%
             pygame.mixer.music.play(-1)  # Loop indefinitely
             print("Background music loaded and playing")
         else:
@@ -237,7 +244,9 @@ def load_background_music():
         print(f"Error loading background music: {e}")
 
 def play_sound(sounds, sound_name, volume=1.0):
-    """Play a sound effect if it exists"""
+    """Play a sound effect if it exists and not muted"""
+    if is_muted:
+        return  # don't play any sounds if muted by LD
     if sounds.get(sound_name):
         sound = sounds[sound_name]
         sound.set_volume(volume)
@@ -250,9 +259,19 @@ def set_sound_volume(sounds, volume):
             sound.set_volume(volume)
 
 def load_trivia():
-    """Load trivia questions from JSON file"""
+    """Load trivia questions from JSON file and filter by enabled difficulties"""
     with open("assets/trivia.json", "r") as f:
-        return json.load(f)
+        trivia_data = json.load(f)
+    
+    # filter trivia based on LD flags
+    return trivia_data
+
+def filter_trivia_by_client(trivia_data, ld_client):
+    """Filter trivia based on LaunchDarkly client (called from main)"""
+    if ld_client:
+        trivia_data = ld_client.filter_trivia_by_difficulty(trivia_data)
+    
+    return trivia_data
 
 def show_trivia_modal(screen, clock, trivia_text):
     """Display a trivia modal that waits for user input"""
@@ -472,10 +491,27 @@ def main():
     pygame.display.set_caption('Dark Skies')
     clock = pygame.time.Clock()
     
+    # initializing LD client
+    ld_client = LaunchDarklyClient()
+    
+    # set global mute state from LD flag
+    global is_muted
+    is_muted = ld_client and ld_client.should_mute_sound()
+    
     # Load sounds and music
     sounds = load_sounds()
-    set_sound_volume(sounds, 0.7)  # Set sound effects to 70% volume
-    load_background_music()
+    
+    # LD flag to control initial sound volume
+    if is_muted:
+        set_sound_volume(sounds, 0.0)  # muted
+        print("Sound muted by LaunchDarkly flag")
+        # Also mute background music
+        load_background_music()
+        pygame.mixer.music.set_volume(0.0)
+    else:
+        set_sound_volume(sounds, 0.7)  # at normal volume
+        print("Sound enabled")
+        load_background_music()
     
     # Show splash screen first
     show_splash_screen(screen, clock)
@@ -487,6 +523,9 @@ def main():
     global background_img
     background_img = pygame.image.load(BKG_IMG_PATH).convert()
     trivia_data = load_trivia()
+    
+    # filter trivia based on LD flags
+    trivia_data = filter_trivia_by_client(trivia_data, ld_client)
     
     bird = Bird()
     # Add more obstacles and make the first appear sooner
@@ -584,6 +623,10 @@ def main():
                     over_text = render_text_with_outline(font, 'Game Over! Press R to Restart', WHITE, BLACK)
                 screen.blit(over_text, (20, SCREEN_HEIGHT // 2 - 24))
             pygame.display.update()
+    
+    if ld_client:
+        ld_client.close()
+    
     pygame.quit()
     sys.exit()
 
