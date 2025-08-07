@@ -27,11 +27,11 @@ else:
     SCREEN_HEIGHT = 600
 
 # Game Constants
-BIRD_WIDTH = 400
-BIRD_HEIGHT = 229
 
 # global mute state controlled by LD
 is_muted = False
+BIRD_WIDTH = 133
+BIRD_HEIGHT = 76
 PIPE_WIDTH = 52
 PIPE_HEIGHT = 320
 PIPE_GAP = 250
@@ -99,6 +99,7 @@ class Pipe:
         self.height = random.randint(50, SCREEN_HEIGHT - PIPE_GAP - 50)
         self.top_rect = pygame.Rect(self.x, 0, PIPE_WIDTH, self.height)
         self.bottom_rect = pygame.Rect(self.x, self.height + PIPE_GAP, PIPE_WIDTH, SCREEN_HEIGHT - self.height - PIPE_GAP)
+        self.gap_rect = pygame.Rect(self.x, self.height, PIPE_WIDTH, PIPE_GAP)
         # Use asteroids as main obstacles
         asteroid_large_img = pygame.image.load("assets/Asteroids/Asteroid Large.png").convert_alpha()
         asteroid_small_img = pygame.image.load("assets/Asteroids/Asteroid Small.png").convert_alpha()
@@ -147,28 +148,33 @@ class Pipe:
         max_x = max(10, PIPE_WIDTH - error_size)
         min_x = 5
         
-        if random.random() < 0.5 and self.top_rect.height > error_size:
-            # Place in top area
-            x = self.x + random.randint(min_x, max_x)
-            max_y = max(self.top_rect.y + 10, self.top_rect.y + self.top_rect.height - error_size)
-            min_y = self.top_rect.y + 10
-            if max_y > min_y:
-                y = random.randint(min_y, max_y)
-                error_positions.append({'x': x, 'y': y})
-        elif self.bottom_rect.height > error_size:
-            # Place in bottom area
-            x = self.x + random.randint(min_x, max_x)
-            max_y = max(self.bottom_rect.y + 10, self.bottom_rect.y + self.bottom_rect.height - error_size)
-            min_y = self.bottom_rect.y + 10
-            if max_y > min_y:
-                y = random.randint(min_y, max_y)
-                error_positions.append({'x': x, 'y': y})
+        # This modification display the symbol at the middle of the gap.
+        x = self.gap_rect.x + (PIPE_WIDTH / 2)
+        y = self.gap_rect.y + (PIPE_GAP / 2)
+        error_positions.append({'x': x, 'y': y})
+        # if random.random() < 0.5 and self.top_rect.height > error_size:
+        #     # Place in top area
+        #     x = self.x + random.randint(min_x, max_x)
+        #     max_y = max(self.top_rect.y + 10, self.top_rect.y + self.top_rect.height - error_size)
+        #     min_y = self.top_rect.y + 10
+        #     if max_y > min_y:
+        #         y = random.randint(min_y, max_y)
+        #         error_positions.append({'x': x, 'y': y})
+        # elif self.bottom_rect.height > error_size:
+        #     # Place in bottom area
+        #     x = self.x + random.randint(min_x, max_x)
+        #     max_y = max(self.bottom_rect.y + 10, self.bottom_rect.y + self.bottom_rect.height - error_size)
+        #     min_y = self.bottom_rect.y + 10
+        #     if max_y > min_y:
+        #         y = random.randint(min_y, max_y)
+        #         error_positions.append({'x': x, 'y': y})
         return error_positions
 
     def move(self):
         self.x -= 3
         self.top_rect.x = self.x
         self.bottom_rect.x = self.x
+        self.gap_rect.x = self.x
         # Update asteroid positions
         for asteroid in self.top_asteroids:
             asteroid['x'] = self.x + (asteroid['x'] - (self.x + 3))
@@ -197,6 +203,8 @@ class Pipe:
     def collide(self, bird):
         return self.top_rect.colliderect(bird.rect) or self.bottom_rect.colliderect(bird.rect)
 
+    def hit_symbol(self, bird):
+        return self.gap_rect.colliderect(bird.rect)
 
 
 
@@ -570,15 +578,17 @@ def main():
                     hit_count += 1
                     play_sound(sounds, 'hit')
                     
-                    # Show trivia modal
-                    if trivia_data:
-                        trivia_item = random.choice(trivia_data)
-                        show_trivia_modal(screen, clock, trivia_item['text'])
-                    
                     # Check if player has hit 10 obstacles
                     if hit_count >= 10:
                         game_over = True
                         play_sound(sounds, 'game_over')
+
+                if pipe.hit_symbol(bird) and not hasattr(pipe, 'score'):
+                    pipe.score = True
+                    # Show trivia modal
+                    if trivia_data:
+                        trivia_item = random.choice(trivia_data)
+                        show_trivia_modal(screen, clock, trivia_item['text'])
                         
                 if pipe.x + PIPE_WIDTH < bird.x and not hasattr(pipe, 'scored'):
                     score += 1
