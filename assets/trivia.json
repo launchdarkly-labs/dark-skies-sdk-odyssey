@@ -16,13 +16,20 @@
     "difficulty": "easy"
   },
   {
+    "text": "SDKs will send analytic events back to LaunchDarkly, which provide data for features like Insights.",
+    "difficulty": "medium"
+  },
+  {
     "text": "LaunchDarkly's Relay Proxy can help with performance and caching in enterprise environments.",
     "difficulty": "medium"
   },
   {
     "text": "Once initialized, server-side SDKs evaluate flags locally, no network request needed.",
-    "difficulty": "medium",
-    "category": ""
+    "difficulty": "medium"
+  },
+  {
+    "text": "You can track extra data through LaunchDarkly using track events.",
+    "difficulty": "medium"
   },
   {
     "text": "Avoid flag bloat: remove deprecated flags to keep your codebase clean.",
@@ -42,6 +49,10 @@
   },
   {
     "text": "Set `trackEvents` to `true` on flags if you want to send event data for experimentation.",
+    "difficulty": "hard"
+  },
+  {
+    "text": "Use AI SDK by providing an instantiated LaunchDarkly SDK instance.",
     "difficulty": "hard"
   }
 ]
