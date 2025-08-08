@@ -17,7 +17,7 @@
 
 - 🐍 Python 3.11+
 - 🎮 Pygame
-- 🚩 LaunchDarkly (planned integration)
+- 🚩 LaunchDarkly
 - 🎨 Custom sprites and sound assets
 
 ---
